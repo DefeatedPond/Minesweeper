@@ -19,6 +19,7 @@ typedef struct {
     int flags;
     double start_time;
     double final_time;
+    double pause_time_buffer;
     int dmap[HEIGHT][WIDTH];
     int vmap[HEIGHT][WIDTH];
     int BBBV;
@@ -44,7 +45,7 @@ void initializeMap(Gamestate *gamestate);
 void displayMap(Gamestate *gamestate, Texture tiles[13]);
 void click(Gamestate *gamestate, int row, int col ,int state); 
 void openMap(Gamestate *gamestate, int row, int col);
-void displayMenu(Gamestate *gamestate, Font font, int pause);
+void displayMenu(Gamestate *gamestate, int pause);
 int checkWin(Gamestate *gamestate);
 int calculateBBBV(Gamestate *gamestate);
 
@@ -65,11 +66,12 @@ int main ()
     }
 
     Gamestate gamestate;
-    gamestate.flags      = 0;
-    gamestate.menu       = 0;
-    gamestate.start_time = 0;
-    gamestate.final_time = 0;
-    gamestate.BBBV       = 0;
+    gamestate.flags             = 0;
+    gamestate.menu              = 0;
+    gamestate.start_time        = 0;
+    gamestate.final_time        = 0;
+    gamestate.BBBV              = 0;
+    gamestate.pause_time_buffer = 0;
     gamestate.SCREEN_WIDTH  = GetRenderWidth(); 
     gamestate.SCREEN_HEIGHT = GetRenderHeight();
     gamestate.scale = WIDTH > HEIGHT ? gamestate.SCREEN_WIDTH / (WIDTH * TILE_SIZE) : gamestate.SCREEN_HEIGHT / (HEIGHT * TILE_SIZE);
@@ -100,17 +102,14 @@ int main ()
     // menu 3 = paused game
     // honestly probably not the best way to make the victory screen but i do not care
 
-    initializeMap(&gamestate);
-    int pause_time_buffer = 0;
 	while (!WindowShouldClose())		
 	{
         switch(gamestate.menu) {
             case 0:
                 BeginDrawing();
                 ClearBackground(BLACK);
-                displayMap(&gamestate, tiles);
-                displayMenu(&gamestate, default_font, 1);
-                
+                DrawText("Left Click to Start!", gamestate.SCREEN_WIDTH / 2, gamestate.SCREEN_HEIGHT / 2, 20 * gamestate.scale, WHITE);
+
                 if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                     initializeMap(&gamestate);
                     gamestate.start_time = GetTime();
@@ -123,7 +122,7 @@ int main ()
                 BeginDrawing();
 		        ClearBackground(BLACK);
                 displayMap(&gamestate, tiles);     
-                displayMenu(&gamestate, default_font, 0);
+                displayMenu(&gamestate, 0);
 		
                 if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                     int row = (int)(GetMouseY() / (16.0 * gamestate.scale));
@@ -171,12 +170,12 @@ int main ()
 
                 if(IsKeyPressed(KEY_R)) {
                     initializeMap(&gamestate);
-                    gamestate.start_time = GetTime();
+                    gamestate.menu = 0;
                 }
 
                 if(IsKeyPressed(KEY_P)) {
                     gamestate.menu = 3;
-                    pause_time_buffer = GetTime() - gamestate.start_time;
+                    gamestate.pause_time_buffer = GetTime() - gamestate.start_time;
                 }
 
 		        EndDrawing();
@@ -185,11 +184,11 @@ int main ()
                 BeginDrawing();
                 ClearBackground(BLACK);
                 displayMap(&gamestate, tiles);
-                displayMenu(&gamestate, default_font, 1);   
+                displayMenu(&gamestate, 1);   
 
                 // x, y, width, hieght, color
                 DrawRectangle(gamestate.SCREEN_WIDTH / 2 - 50 * gamestate.scale, gamestate.SCREEN_HEIGHT / 2 - 10 * gamestate.scale, 100 * gamestate.scale, 20 * gamestate.scale, BLACK);
-                // test, x, y, font size, color
+                // text, x, y, font size, color
                 DrawText("VICTORY!", gamestate.SCREEN_WIDTH / 2 - 50 * gamestate.scale, gamestate.SCREEN_HEIGHT / 2 - 10 * gamestate.scale, 20 * gamestate.scale, WHITE); 
 
                 if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT))  {
@@ -204,13 +203,35 @@ int main ()
                 BeginDrawing();
                 ClearBackground(BLACK);
                 displayMap(&gamestate, tiles);
-                displayMenu(&gamestate, default_font, 0);
+                displayMenu(&gamestate, 0);
 
-                gamestate.start_time = GetTime() - pause_time_buffer;
+                gamestate.start_time = GetTime() - gamestate.pause_time_buffer;
                 if(IsKeyPressed(KEY_P) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                     gamestate.menu = 1;
+                 
+                    int row = (int)(GetMouseY() / (16.0 * gamestate.scale));
+                    int col = (int)(GetMouseX() / (16.0 * gamestate.scale));
+                    click(&gamestate, row, col, 0);
                 }
                 
+                EndDrawing();
+                break;
+            case 4:
+                // i know this definitely isnt a good way to do this, but i really dont care.
+                // just gonna make it work now and refactor later
+                BeginDrawing();
+                ClearBackground(BLACK);
+                displayMap(&gamestate, tiles);
+                displayMenu(&gamestate, 0);
+
+                gamestate.start_time = GetTime() - gamestate.pause_time_buffer;
+                if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    gamestate.flags = 0;
+                    initializeMap(&gamestate);
+                    gamestate.start_time = GetTime();
+                    gamestate.pause_time_buffer = 0;
+                    gamestate.menu = 3;
+                }
                 EndDrawing();
                 break;
         }
@@ -229,7 +250,7 @@ int main ()
 	return 0;
 }
 
-void displayMenu(Gamestate *gamestate, Font font, int pause) {   
+void displayMenu(Gamestate *gamestate, int pause) {   
     DrawRectangle(0, HEIGHT * TILE_SIZE * gamestate->scale, gamestate->SCREEN_WIDTH, gamestate->SCREEN_HEIGHT - HEIGHT * TILE_SIZE * gamestate->scale, BLACK);
     char str_flags[32];
     char str_time[32];
@@ -275,8 +296,9 @@ void click(Gamestate *gamestate, int row, int col, int state) {
                 }
             }
             gamestate->final_time = GetTime() - gamestate->start_time;
-            gamestate->flags = 0;
-            gamestate->menu = 0;
+            gamestate->menu = 4;
+            gamestate->pause_time_buffer = GetTime() - gamestate->start_time;
+
         } 
     } else if (gamestate->vmap[row][col] < 9 && gamestate->vmap[row][col] != 0) {
         int num_flags = 0;
