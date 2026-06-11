@@ -26,11 +26,6 @@ typedef struct {
 } Gamestate;
 
 
-//int is_flagged(Gamestate *gamestate, int row, int col) {return gamestate->dmap[row][col] == 9;}
-int is_mine(Gamestate *gamestate, int row, int col) {return gamestate->dmap[row][col] == 11;}
-//int is_empty(Gamestate *gamestate, int row, int col) {return gamestate->dmap[row][col] == 0;}
-//int is_safe(Gamestate *gamestate, int row, int col) {return gamestate->dmap[row][col] > 0 && gamestate->vmap[row][col] < 9;}
-//int is_covered(Gamestate *gamestate, int row, int col) {return gamestate->vmap[row][col] == 10;}
 int in_bounds(int row, int col) {return (row >= 0 && row < HEIGHT && col >= 0 && col < WIDTH);}
 
 /* map key
@@ -357,11 +352,11 @@ void initializeMap(Gamestate *gamestate) {
 
     for(int row = 0; row < HEIGHT; row++) {
         for(int col = 0; col < WIDTH; col++) {
-            if(gamestate->dmap[row][col] == 0) {
+            if(gamestate->dmap[row][col] == 11) {
                 for(int i = -1; i <= 1; i++) {
                     for(int j = -1; j <= 1; j++) {
-                        if(in_bounds(row + i, col + j) && is_mine(gamestate, row + i, col + j)) {
-                            gamestate->dmap[row][col]++;
+                        if(in_bounds(row + i, col + j) && gamestate->dmap[row + i][col + j] < 9) {
+                            gamestate->dmap[row + i][col + j]++;
                         }  
                     }
                 }
