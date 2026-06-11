@@ -1,2 +1,4 @@
 resources/highscores.json
 resources/times.json
+build/external
+

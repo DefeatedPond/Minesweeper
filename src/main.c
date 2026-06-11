@@ -8,7 +8,7 @@
 
 #define WIDTH 30 // width of map
 #define HEIGHT 16 // height of map
-#define MINES 99
+#define MINES 10
 #define TILE_SIZE 16.0 // tile size in pixels
 
 typedef struct {
@@ -21,6 +21,7 @@ typedef struct {
     double final_time;
     int dmap[HEIGHT][WIDTH];
     int vmap[HEIGHT][WIDTH];
+    int BBBV;
 } Gamestate;
 
 
@@ -45,6 +46,7 @@ void click(Gamestate *gamestate, int row, int col ,int state);
 void openMap(Gamestate *gamestate, int row, int col);
 void displayMenu(Gamestate *gamestate, Font font, int pause);
 int checkWin(Gamestate *gamestate);
+int calculateBBBV(Gamestate *gamestate);
 
 int main ()
 {
@@ -67,6 +69,7 @@ int main ()
     gamestate.menu       = 0;
     gamestate.start_time = 0;
     gamestate.final_time = 0;
+    gamestate.BBBV       = 0;
     gamestate.SCREEN_WIDTH  = GetRenderWidth(); 
     gamestate.SCREEN_HEIGHT = GetRenderHeight();
     gamestate.scale = WIDTH > HEIGHT ? gamestate.SCREEN_WIDTH / (WIDTH * TILE_SIZE) : gamestate.SCREEN_HEIGHT / (HEIGHT * TILE_SIZE);
@@ -137,6 +140,8 @@ int main ()
                         cJSON_AddNumberToObject(json_time, "Height", HEIGHT);
                         cJSON_AddNumberToObject(json_time, "Mines", MINES);
                         cJSON_AddNumberToObject(json_time, "Time", gamestate.final_time);
+                        cJSON_AddNumberToObject(json_time, "3BV", gamestate.BBBV);
+                        cJSON_AddNumberToObject(json_time, "3BV/s", gamestate.BBBV / gamestate.final_time);
                         cJSON_AddStringToObject(json_time, "Date", ctime(&current_time));
                         char *json_time_str = cJSON_Print(json_time);
                         fputs(json_time_str, times);
@@ -228,7 +233,9 @@ void displayMenu(Gamestate *gamestate, Font font, int pause) {
     DrawRectangle(0, HEIGHT * TILE_SIZE * gamestate->scale, gamestate->SCREEN_WIDTH, gamestate->SCREEN_HEIGHT - HEIGHT * TILE_SIZE * gamestate->scale, BLACK);
     char str_flags[4];
     char str_time[6];
+    char str_BBBV[6];
     sprintf(str_flags, "%d", MINES - gamestate->flags);
+    sprintf(str_BBBV, "%d", gamestate->BBBV);
     if(pause) {
         sprintf(str_time, "%d", (int)(gamestate->final_time));
     } else {
@@ -236,6 +243,7 @@ void displayMenu(Gamestate *gamestate, Font font, int pause) {
     }
     DrawText(str_flags, 0, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
     DrawText(str_time, 100 * gamestate->scale, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
+    DrawText(str_BBBV, 200 * gamestate->scale, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
 }
 
 
@@ -307,6 +315,7 @@ void displayMap(Gamestate *gamestate, Texture tiles[13]) {
 }
 
 void initializeMap(Gamestate *gamestate) {
+
     for(int i = 0; i < HEIGHT; i++) {
         for(int j = 0; j < WIDTH; j++) {
             gamestate->dmap[i][j] = 0;
@@ -343,7 +352,42 @@ void initializeMap(Gamestate *gamestate) {
             gamestate->vmap[i][j] = 10;
         }
     }
+
+    // deciding if i want to make the map regenerate if BBBV is too low.
+    gamestate->BBBV = calculateBBBV(gamestate);
+    
 }
+
+int calculateBBBV(Gamestate *gamestate) {
+    int clicks = 0;
+
+    for(int row = 0; row < HEIGHT; row++) {
+        for(int col = 0; col < WIDTH; col++) {
+            if(gamestate->vmap[row][col] == 10 && gamestate->dmap[row][col] == 0) {
+                clicks++;
+                click(gamestate, row, col, 0);
+            }
+        }
+    }
+
+    for(int row = 0; row < HEIGHT; row++) {
+        for(int col = 0; col < WIDTH; col++) {
+            if(gamestate->vmap[row][col] == 10 && gamestate->dmap[row][col] < 9 && gamestate->dmap[row][col] != 0) {
+                clicks++;
+                click(gamestate, row, col, 0);
+            }
+        }
+    }
+    
+    for(int i = 0; i < HEIGHT; i++) {
+        for(int j = 0; j < WIDTH; j++) {
+            gamestate->vmap[i][j] = 10;
+        }
+    }
+
+    return clicks;
+}
+
 
 void openMap(Gamestate *gamestate, int row, int col) {
     gamestate->vmap[row][col] = gamestate->dmap[row][col];
