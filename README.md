@@ -1,4 +1,4 @@
-To change width, height, and mines, you have to go into /src/main.c and change the constants at the top.
+To change width, height, and mines, you have to go into src/main.c and change the constants at the top.
 To run the game, build with ./build.sh and then run it with ./bin/Debug/Minesweeper
 
 Plan on adding functionality to change width, height, and mines in game
