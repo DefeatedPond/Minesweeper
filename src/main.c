@@ -8,7 +8,7 @@
 
 #define WIDTH 30 // width of map
 #define HEIGHT 16 // height of map
-#define MINES 10
+#define MINES 99
 #define TILE_SIZE 16.0 // tile size in pixels
 
 typedef struct {
@@ -207,7 +207,7 @@ int main ()
                 displayMenu(&gamestate, default_font, 0);
 
                 gamestate.start_time = GetTime() - pause_time_buffer;
-                if(IsKeyPressed(KEY_P || KEY_E)) {
+                if(IsKeyPressed(KEY_P) || IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
                     gamestate.menu = 1;
                 }
                 
@@ -231,19 +231,19 @@ int main ()
 
 void displayMenu(Gamestate *gamestate, Font font, int pause) {   
     DrawRectangle(0, HEIGHT * TILE_SIZE * gamestate->scale, gamestate->SCREEN_WIDTH, gamestate->SCREEN_HEIGHT - HEIGHT * TILE_SIZE * gamestate->scale, BLACK);
-    char str_flags[4];
-    char str_time[6];
-    char str_BBBV[6];
-    sprintf(str_flags, "%d", MINES - gamestate->flags);
-    sprintf(str_BBBV, "%d", gamestate->BBBV);
+    char str_flags[32];
+    char str_time[32];
+    char str_BBBV[32];
+    sprintf(str_flags, "Mines Flagged: %d", MINES - gamestate->flags);
+    sprintf(str_BBBV, "3BV: %d", gamestate->BBBV);
     if(pause) {
-        sprintf(str_time, "%d", (int)(gamestate->final_time));
+        sprintf(str_time, "Time: %d", (int)(gamestate->final_time));
     } else {
-        sprintf(str_time, "%d", (int)(GetTime() - gamestate->start_time));
+        sprintf(str_time, "Time: %d", (int)(GetTime() - gamestate->start_time));
     }
     DrawText(str_flags, 0, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
     DrawText(str_time, 100 * gamestate->scale, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
-    DrawText(str_BBBV, 200 * gamestate->scale, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
+    DrawText(str_BBBV, 150 * gamestate->scale, HEIGHT * TILE_SIZE * gamestate->scale, 10 * gamestate->scale, WHITE);
 }
 
 
